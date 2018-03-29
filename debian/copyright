@@ -14,6 +14,7 @@ Files: cJSON.h
        cJSON_Utils.h
        cJSON_Utils.c
        cJSON.c
+       test.c
 Copyright: 2009-2017, Dave Gamble and cJSON contributors
 License: MIT
 
