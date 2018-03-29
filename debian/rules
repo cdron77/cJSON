@@ -4,11 +4,4 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 %:
-	dh $@
-
-DESTDIR := debian/tmp
-override_dh_auto_install:
-	mkdir -p $(DESTDIR)/usr/include/cjson
-	cp -a cJSON.h cJSON_Utils.h $(DESTDIR)/usr/include/cjson
-	mkdir -p $(DESTDIR)/usr/lib/x86_64-linux-gnu/
-	cp -a libcjson.so* libcjson_utils.so* $(DESTDIR)/usr/lib/x86_64-linux-gnu
+	dh $@ --buildsystem=cmake
