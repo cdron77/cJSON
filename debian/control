@@ -22,7 +22,7 @@ Description: Ultralightweight JSON parser in ANSI C (development files)
  .
  It's a single file of C, and a single header file.
  .
- This package contians the header files of cJSON.
+ This package contains the header files of cJSON.
 
 
 Package: libcjson1
