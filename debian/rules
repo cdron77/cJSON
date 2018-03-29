@@ -1,17 +1,14 @@
 #!/usr/bin/make -f
-# You must remove unused comment lines for the released package.
 #export DH_VERBOSE = 1
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
 export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 %:
-	dh $@  
+	dh $@
 
 DESTDIR := debian/tmp
 override_dh_auto_install:
-	#dh_auto_install -- prefix=/usr
-	install -d $(DESTDIR)/usr/include/cjson
-	install cJSON.h cJSON_Utils.h $(DESTDIR)/usr/include/cjson
-	install -d $(DESTDIR)/usr/lib/x86_64-linux-gnu/
-	install libcjson.so* libcjson_utils.so* $(DESTDIR)/usr/lib/x86_64-linux-gnu
+	mkdir -p $(DESTDIR)/usr/include/cjson
+	cp -a cJSON.h cJSON_Utils.h $(DESTDIR)/usr/include/cjson
+	mkdir -p $(DESTDIR)/usr/lib/x86_64-linux-gnu/
+	cp -a libcjson.so* libcjson_utils.so* $(DESTDIR)/usr/lib/x86_64-linux-gnu
