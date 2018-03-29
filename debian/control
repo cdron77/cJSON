@@ -1,0 +1,41 @@
+Source: cjson
+Section: libs
+Priority: optional
+Maintainer: Yanhao Mo <yanhaocs@gmail.com>
+Build-Depends:
+ debhelper (>=11),
+ cmake
+Standards-Version: 4.1.3
+Homepage: https://github.com/DaveGamble/cJSON
+Vcs-Git: https://salsa.debian.org/yanhao-guest/cJSON
+Vcs-Browser: https://salsa.debian.org/yanhao-guest/cJSON
+
+Package: libcjson-dev
+Architecture: any
+Section: libdevel
+Depends: libcjson1 (= ${binary:Version}), ${misc:Depends}
+Multi-Arch: same
+Description: Ultralightweight JSON parser in ANSI C (development files)
+ cJSON is a ultralightweight json parse.
+ .
+ It aims to be the dumbest possible parser that you can get your job done with.
+ .
+ It's a single file of C, and a single header file.
+ .
+ This package contians the header files of cJSON.
+
+
+Package: libcjson1
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends}
+Multi-Arch: same
+Description: Ultralightweight JSON parser in ANSI C
+ cJSON is a ultralightweight json parse.
+ .
+ It aims to be the dumbest possible parser that you can get your job done with.
+ .
+ It's a single file of C, and a single header file.
+ .
+ This package contains the shared libraries.
