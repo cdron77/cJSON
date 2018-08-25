@@ -1,2 +1,1 @@
-usr/lib/*/libcjson.so.1
-usr/lib/*/libcjson.so.1.7.5
+usr/lib/*/libcjson.so.1*

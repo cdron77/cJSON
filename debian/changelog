@@ -1,3 +1,11 @@
+cjson (1.7.7-1) unstable; urgency=medium
+
+  * New upstream version 1.7.7
+    + Fix a memory leak when realloc fails.
+  * Bump Standards-Version to 4.2.0 (no changes needed).
+
+ -- Yanhao Mo <yanhaocs@gmail.com>  Thu, 23 Aug 2018 16:42:05 +0800
+
 cjson (1.7.5-1) unstable; urgency=medium
 
   * Initial release. Closes: #870443
