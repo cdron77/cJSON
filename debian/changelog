@@ -1,3 +1,11 @@
+cjson (1.7.8-1) unstable; urgency=medium
+
+  * New upstream version 1.7.8
+  * Bump Standards-Version to 4.2.0 (no changes needed).
+  * Apply wrap-and-sort changes.
+
+ -- Yanhao Mo <yanhaocs@gmail.com>  Sun, 14 Oct 2018 11:11:09 +0800
+
 cjson (1.7.7-1) unstable; urgency=medium
 
   * New upstream version 1.7.7
