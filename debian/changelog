@@ -1,3 +1,9 @@
+cjson (1.7.10-1) unstable; urgency=medium
+
+  * New upstream version 1.7.10
+
+ -- Yanhao Mo <yanhaocs@gmail.com>  Mon, 07 Jan 2019 16:17:56 +0800
+
 cjson (1.7.8-1) unstable; urgency=medium
 
   * New upstream version 1.7.8
