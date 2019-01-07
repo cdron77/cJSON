@@ -1,3 +1,18 @@
+1.7.10
+======
+Fixes:
+------
+* Fix package config file for `libcjson`. Thanks @shiluotang for reporting (#321)
+* Correctly split lists in `cJSON_Utils`'s merge sort. Thanks @andysCaplin for the fix (#322)
+
+1.7.9
+=====
+Fixes:
+------
+* Fix a bug where `cJSON_GetObjectItemCaseSensitive` would pass a nullpointer to `strcmp` when called on an array (#315). Thanks @yuweol for reporting.
+* Fix error in `cJSON_Utils` where the case sensitivity was not respected (#317). Thanks @yuta-oxo for fixing.
+* Fix some warnings detected by the Visual Studio Static Analyzer (#307). Thanks @bnason-nf
+
 1.7.8
 =====
 Fixes:

@@ -8,7 +8,7 @@ CJSON_TEST_SRC = cJSON.c test.c
 
 LDLIBS = -lm
 
-LIBVERSION = 1.7.8
+LIBVERSION = 1.7.10
 CJSON_SOVERSION = 1
 UTILS_SOVERSION = 1
 
@@ -46,7 +46,7 @@ STATIC = a
 ifeq (Darwin, $(uname))
 	SHARED = dylib
 	CJSON_SO_LDFLAG = ""
-    UTILS_SO_LDFLAG = ""
+	UTILS_SO_LDFLAG = ""
 endif
 
 #cJSON library names
