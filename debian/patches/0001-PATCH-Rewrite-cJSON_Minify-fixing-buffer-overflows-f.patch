@@ -1,0 +1,359 @@
+Description: cherry pick upstream commit a43fa56a63920343d0ac8f8e73a6b0447867f459
+Author: Gordon Ball <gordon@chronitis.net>
+From: Max Bruckner <max@maxbruckner.de>
+Date: Sun, 14 Apr 2019 23:13:41 +0200
+Subject: [PATCH] Rewrite cJSON_Minify, fixing buffer overflows, fixes #338
+
+Also first tests for cJSON_Minify.
+Thanks @bigric3 for reporting
+---
+ cJSON.c              | 128 ++++++++++++++++++++++++---------------
+ tests/CMakeLists.txt |   1 +
+ tests/minify_tests.c | 167 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 246 insertions(+), 50 deletions(-)
+ create mode 100644 tests/minify_tests.c
+
+diff --git a/cJSON.c b/cJSON.c
+index 74df6ec..baa90f1 100644
+--- a/cJSON.c
++++ b/cJSON.c
+@@ -144,6 +144,9 @@ static void * CJSON_CDECL internal_realloc(void *pointer, size_t size)
+ #define internal_realloc realloc
+ #endif
+ 
++/* strlen of character literals resolved at compile time */
++#define static_strlen(string_literal) (sizeof(string_literal) - sizeof(""))
++
+ static internal_hooks global_hooks = { internal_malloc, internal_free, internal_realloc };
+ 
+ static unsigned char* cJSON_strdup(const unsigned char* string, const internal_hooks * const hooks)
+@@ -2630,69 +2633,94 @@ fail:
+     return NULL;
+ }
+ 
+-CJSON_PUBLIC(void) cJSON_Minify(char *json)
++static void skip_oneline_comment(char **input)
+ {
+-    unsigned char *into = (unsigned char*)json;
++    *input += static_strlen("//");
+ 
+-    if (json == NULL)
++    for (; (*input)[0] != '\0'; ++(*input))
+     {
+-        return;
++        if ((*input)[0] == '\n') {
++            *input += static_strlen("\n");
++            return;
++        }
+     }
++}
++
++static void skip_multiline_comment(char **input)
++{
++    *input += static_strlen("/*");
+ 
+-    while (*json)
++    for (; (*input)[0] != '\0'; ++(*input))
+     {
+-        if (*json == ' ')
++        if (((*input)[0] == '*') && ((*input)[1] == '/'))
+         {
+-            json++;
++            *input += static_strlen("*/");
++            return;
+         }
+-        else if (*json == '\t')
+-        {
+-            /* Whitespace characters. */
+-            json++;
+-        }
+-        else if (*json == '\r')
+-        {
+-            json++;
+-        }
+-        else if (*json=='\n')
+-        {
+-            json++;
+-        }
+-        else if ((*json == '/') && (json[1] == '/'))
+-        {
+-            /* double-slash comments, to end of line. */
+-            while (*json && (*json != '\n'))
+-            {
+-                json++;
+-            }
++    }
++}
++
++static void minify_string(char **input, char **output) {
++    (*output)[0] = (*input)[0];
++    *input += static_strlen("\"");
++    *output += static_strlen("\"");
++
++
++    for (; (*input)[0] != '\0'; ++(*input), ++(*output)) {
++        (*output)[0] = (*input)[0];
++
++        if ((*input)[0] == '\"') {
++            (*output)[0] = '\"';
++            *input += static_strlen("\"");
++            *output += static_strlen("\"");
++            return;
++        } else if (((*input)[0] == '\\') && ((*input)[1] == '\"')) {
++            (*output)[1] = (*input)[1];
++            *input += static_strlen("\"");
++            *output += static_strlen("\"");
+         }
+-        else if ((*json == '/') && (json[1] == '*'))
++    }
++}
++
++CJSON_PUBLIC(void) cJSON_Minify(char *json)
++{
++    char *into = json;
++
++    if (json == NULL)
++    {
++        return;
++    }
++
++    while (json[0] != '\0')
++    {
++        switch (json[0])
+         {
+-            /* multiline comments. */
+-            while (*json && !((*json == '*') && (json[1] == '/')))
+-            {
++            case ' ':
++            case '\t':
++            case '\r':
++            case '\n':
+                 json++;
+-            }
+-            json += 2;
+-        }
+-        else if (*json == '\"')
+-        {
+-            /* string literals, which are \" sensitive. */
+-            *into++ = (unsigned char)*json++;
+-            while (*json && (*json != '\"'))
+-            {
+-                if (*json == '\\')
++                break;
++
++            case '/':
++                if (json[1] == '/')
+                 {
+-                    *into++ = (unsigned char)*json++;
++                    skip_oneline_comment(&json);
+                 }
+-                *into++ = (unsigned char)*json++;
+-            }
+-            *into++ = (unsigned char)*json++;
+-        }
+-        else
+-        {
+-            /* All other characters. */
+-            *into++ = (unsigned char)*json++;
++                else if (json[1] == '*')
++                {
++                    skip_multiline_comment(&json);
++                }
++                break;
++
++            case '\"':
++                minify_string(&json, (char**)&into);
++                break;
++
++            default:
++                into[0] = json[0];
++                json++;
++                into++;
+         }
+     }
+ 
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 6f1688d..fecc9a9 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -57,6 +57,7 @@ if(ENABLE_CJSON_TEST)
+         compare_tests
+         cjson_add
+         readme_examples
++        minify_tests
+     )
+ 
+     option(ENABLE_VALGRIND OFF "Enable the valgrind memory checker for the tests.")
+diff --git a/tests/minify_tests.c b/tests/minify_tests.c
+new file mode 100644
+index 0000000..e39a944
+--- /dev/null
++++ b/tests/minify_tests.c
+@@ -0,0 +1,167 @@
++/*
++  Copyright (c) 2009-2019 Dave Gamble and cJSON contributors
++
++  Permission is hereby granted, free of charge, to any person obtaining a copy
++  of this software and associated documentation files (the "Software"), to deal
++  in the Software without restriction, including without limitation the rights
++  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++  copies of the Software, and to permit persons to whom the Software is
++  furnished to do so, subject to the following conditions:
++
++  The above copyright notice and this permission notice shall be included in
++  all copies or substantial portions of the Software.
++
++  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++  THE SOFTWARE.
++*/
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#include "unity/examples/unity_config.h"
++#include "unity/src/unity.h"
++#include "common.h"
++
++
++static void cjson_minify_should_not_overflow_buffer(void)
++{
++    char unclosed_multiline_comment[] = "/* bla";
++    char pending_escape[] = "\"\\";
++
++    cJSON_Minify(unclosed_multiline_comment);
++    TEST_ASSERT_EQUAL_STRING("", unclosed_multiline_comment);
++
++    cJSON_Minify(pending_escape);
++    TEST_ASSERT_EQUAL_STRING("\"\\", pending_escape);
++}
++
++static void cjson_minify_should_remove_single_line_comments(void)
++{
++    const char to_minify[] = "{// this is {} \"some kind\" of [] comment /*, don't you see\n}";
++
++    char* minified = (char*) malloc(sizeof(to_minify));
++    TEST_ASSERT_NOT_NULL(minified);
++    strcpy(minified, to_minify);
++
++    cJSON_Minify(minified);
++    TEST_ASSERT_EQUAL_STRING("{}", minified);
++
++    free(minified);
++}
++
++static void cjson_minify_should_remove_spaces(void)
++{
++    const char to_minify[] = "{ \"key\":\ttrue\r\n    }";
++
++    char* minified = (char*) malloc(sizeof(to_minify));
++    TEST_ASSERT_NOT_NULL(minified);
++    strcpy(minified, to_minify);
++
++    cJSON_Minify(minified);
++    TEST_ASSERT_EQUAL_STRING("{\"key\":true}", minified);
++
++    free(minified);
++}
++
++static void cjson_minify_should_remove_multiline_comments(void)
++{
++    const char to_minify[] = "{/* this is\n a /* multi\n //line \n {comment \"\\\" */}";
++
++    char* minified = (char*) malloc(sizeof(to_minify));
++    TEST_ASSERT_NOT_NULL(minified);
++    strcpy(minified, to_minify);
++
++    cJSON_Minify(minified);
++    TEST_ASSERT_EQUAL_STRING("{}", minified);
++
++    free(minified);
++}
++
++static void cjson_minify_should_not_modify_strings(void)
++{
++    const char to_minify[] = "\"this is a string \\\" \\t bla\"";
++
++    char* minified = (char*) malloc(sizeof(to_minify));
++    TEST_ASSERT_NOT_NULL(minified);
++    strcpy(minified, to_minify);
++
++    cJSON_Minify(minified);
++    TEST_ASSERT_EQUAL_STRING(to_minify, minified);
++
++    free(minified);
++}
++
++static void cjson_minify_should_minify_json(void) {
++    const char to_minify[] =
++            "{\n"
++            "    \"glossary\": { // comment\n"
++            "        \"title\": \"example glossary\",\n"
++            "  /* multi\n"
++            " line */\n"
++            "		\"GlossDiv\": {\n"
++            "            \"title\": \"S\",\n"
++            "			\"GlossList\": {\n"
++            "                \"GlossEntry\": {\n"
++            "                    \"ID\": \"SGML\",\n"
++            "					\"SortAs\": \"SGML\",\n"
++            "					\"Acronym\": \"SGML\",\n"
++            "					\"Abbrev\": \"ISO 8879:1986\",\n"
++            "					\"GlossDef\": {\n"
++            "						\"GlossSeeAlso\": [\"GML\", \"XML\"]\n"
++            "                    },\n"
++            "					\"GlossSee\": \"markup\"\n"
++            "                }\n"
++            "            }\n"
++            "        }\n"
++            "    }\n"
++            "}";
++    const char* minified =
++            "{"
++            "\"glossary\":{"
++            "\"title\":\"example glossary\","
++            "\"GlossDiv\":{"
++            "\"title\":\"S\","
++            "\"GlossList\":{"
++            "\"GlossEntry\":{"
++            "\"ID\":\"SGML\","
++            "\"SortAs\":\"SGML\","
++            "\"Acronym\":\"SGML\","
++            "\"Abbrev\":\"ISO 8879:1986\","
++            "\"GlossDef\":{"
++            "\"GlossSeeAlso\":[\"GML\",\"XML\"]"
++            "},"
++            "\"GlossSee\":\"markup\""
++            "}"
++            "}"
++            "}"
++            "}"
++            "}";
++
++    char *buffer = (char*) malloc(sizeof(to_minify));
++    strcpy(buffer, to_minify);
++
++    cJSON_Minify(buffer);
++    TEST_ASSERT_EQUAL_STRING(minified, buffer);
++
++    free(buffer);
++}
++
++int CJSON_CDECL main(void)
++{
++    UNITY_BEGIN();
++
++    RUN_TEST(cjson_minify_should_not_overflow_buffer);
++    RUN_TEST(cjson_minify_should_minify_json);
++    RUN_TEST(cjson_minify_should_remove_single_line_comments);
++    RUN_TEST(cjson_minify_should_remove_multiline_comments);
++    RUN_TEST(cjson_minify_should_remove_spaces);
++    RUN_TEST(cjson_minify_should_not_modify_strings);
++
++    return UNITY_END();
++}
