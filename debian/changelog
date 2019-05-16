@@ -1,3 +1,13 @@
+cjson (1.7.10-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Cherry pick upstream commit a43fa56a63920343d0ac8f8e73a6b0447867f459,
+    which contains fixes for CVEs (Closes: #928726)
+    + CVE-2019-11834
+    + CVE-2019-11835
+
+ -- Gordon Ball <gordon@chronitis.net>  Tue, 14 May 2019 08:52:20 +0000
+
 cjson (1.7.10-1) unstable; urgency=medium
 
   * New upstream version 1.7.10
