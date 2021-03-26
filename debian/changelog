@@ -1,3 +1,9 @@
+cjson (1.7.10-1.2) UNRELEASED; urgency=medium
+
+  * Add files for CMake linking.
+
+ -- Davide Rondini <davide.rondini@drondini.com>  Fri, 26 Mar 2021 16:18:01 +0100
+
 cjson (1.7.10-1.1) unstable; urgency=medium
 
   * Non-maintainer upload.
